@@ -1,0 +1,56 @@
+---
+- name: Install Jenkins and Terraform on CentOS 9
+  hosts: your_centos_9_server
+  become: yes
+
+  tasks:
+    - name: Update package cache
+      yum:
+        name: '*'
+        state: latest
+
+    - name: Install Java
+      yum:
+        name: java-11-openjdk
+        state: present
+
+    - name: Add Jenkins repository
+      yum_repository:
+        name: jenkins
+        description: Jenkins Official Repository
+        baseurl: http://pkg.jenkins.io/redhat-stable
+        gpgcheck: yes
+        gpgkey: http://pkg.jenkins.io/redhat-stable/jenkins.io.key
+        enabled: yes
+
+    - name: Install Jenkins
+      yum:
+        name: jenkins
+        state: present
+
+    - name: Start Jenkins service
+      systemd:
+        name: jenkins
+        state: started
+        enabled: yes
+
+    - name: Install wget (required for Terraform)
+      yum:
+        name: wget
+        state: present
+
+    - name: Download and install Terraform
+      shell: >
+        wget https://releases.hashicorp.com/terraform/0.14.9/terraform_0.14.9_linux_amd64.zip &&
+        unzip terraform_0.14.9_linux_amd64.zip &&
+        mv terraform /usr/local/bin/ &&
+        rm terraform_0.14.9_linux_amd64.zip
+      args:
+        executable: /bin/bash
+      register: terraform_install_result
+      ignore_errors: yes
+
+    - name: Fail if Terraform installation fails
+      fail:
+        msg: "Failed to install Terraform"
+      when: terraform_install_result.rc != 0

@@ -1,0 +1,41 @@
+pipeline {
+    agent any
+
+    environment {
+        INVENTORY_PATH = ""
+        GIT_REPO_URL = "https://github.com/roomem/localToCloudIAC.git"
+    }
+
+    stages {
+        stage('Git Clone') {
+            steps {
+                script {
+                    sh "git clone ${GIT_REPO_URL}"
+                }
+            }
+        }
+
+        stage('Terraform Provisioning') {
+            steps {
+                script {
+                    dir('localToCloudIAC/terraform') {
+                        sh 'terraform init'
+                        sh 'terraform apply -auto-approve'
+                    }
+                }
+            }
+        }
+
+        stage('Install Jenkins and Terraform') {
+            steps {
+                script {
+                    dir('localToCloudIAC/ansible') {
+                        sh "ansible-playbook install_jenkins_terraform.yml"
+                        //                        sh "ansible-playbook -i ${INVENTORY_PATH} install_jenkins_terraform.yml"
+
+                    }
+                }
+            }
+        }
+    }
+}
